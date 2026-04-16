@@ -7,7 +7,7 @@ import (
 	"github.com/nova-chat/novaproto"
 )
 
-type User struct {
+type Client struct {
 	Id            uuid.UUID
 	EncryptionKey []byte
 
@@ -16,17 +16,17 @@ type User struct {
 }
 
 type userStore struct {
-	Users    map[uuid.UUID]*User
+	Users    map[uuid.UUID]*Client
 	usersMut sync.RWMutex
 }
 
 func newUserStore() *userStore {
 	return &userStore{
-		Users: make(map[uuid.UUID]*User),
+		Users: make(map[uuid.UUID]*Client),
 	}
 }
 
-func (s *userStore) SetUser(u *User) {
+func (s *userStore) SetUser(u *Client) {
 	s.usersMut.Lock()
 	defer s.usersMut.Unlock()
 	s.Users[u.Id] = u
@@ -38,7 +38,7 @@ func (s *userStore) DelUser(id uuid.UUID) {
 	delete(s.Users, id)
 }
 
-func (s *userStore) GetUser(id uuid.UUID) (*User, bool) {
+func (s *userStore) GetUser(id uuid.UUID) (*Client, bool) {
 	s.usersMut.Lock()
 	defer s.usersMut.Unlock()
 	u, ok := s.Users[id]

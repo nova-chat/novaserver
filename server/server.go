@@ -76,7 +76,7 @@ func (srv *Server) Run(ctx context.Context) {
 }
 
 func (srv *Server) handleConnection(ctx context.Context, client net.Conn) {
-	user := &User{
+	user := &Client{
 		Id:            uuid.New(),
 		EncryptionKey: nil,
 	}
@@ -108,7 +108,7 @@ func (srv *Server) handleConnection(ctx context.Context, client net.Conn) {
 	}
 }
 
-func (srv *Server) handleRequest(ctx context.Context, client *User, header novaproto.PacketHeader, dataStream io.Reader) error {
+func (srv *Server) handleRequest(ctx context.Context, client *Client, header novaproto.PacketHeader, dataStream io.Reader) error {
 	if IsValueMethodKind(header.Kind, KindClient2Server) {
 		handler, ex := srv.GetHandler(header)
 		if !ex {

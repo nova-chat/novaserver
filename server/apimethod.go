@@ -16,8 +16,8 @@ type ApiMethod[T any] struct {
 	raw   bool
 }
 
-type RawPacketHandler func(ctx context.Context, client *User, header novaproto.PacketHeader, stream io.Reader) error
-type TypePacketHandler[T any] func(ctx context.Context, client *User, header novaproto.PacketHeader, data T) error
+type RawPacketHandler func(ctx context.Context, client *Client, header novaproto.PacketHeader, stream io.Reader) error
+type TypePacketHandler[T any] func(ctx context.Context, client *Client, header novaproto.PacketHeader, data T) error
 
 type iServer interface {
 	addRoute(method uint64, handler RawPacketHandler)
@@ -28,12 +28,12 @@ func (m *ApiMethod[T]) Value() uint64 {
 }
 func (m *ApiMethod[T]) ServerRegister(server iServer, handler TypePacketHandler[T]) {
 	if m.raw {
-		server.addRoute(m.value, func(ctx context.Context, client *User, header novaproto.PacketHeader, stream io.Reader) error {
+		server.addRoute(m.value, func(ctx context.Context, client *Client, header novaproto.PacketHeader, stream io.Reader) error {
 			data := any(stream).(T)
 			return handler(ctx, client, header, data)
 		})
 	} else {
-		server.addRoute(m.value, func(ctx context.Context, client *User, header novaproto.PacketHeader, stream io.Reader) error {
+		server.addRoute(m.value, func(ctx context.Context, client *Client, header novaproto.PacketHeader, stream io.Reader) error {
 			var data T
 			bytes, err := io.ReadAll(stream)
 			if err != nil {
@@ -92,6 +92,25 @@ func Method[T any](name string, kind MethodKind, access MethodAccess) ApiMethod[
 	}
 
 	return method
+}
+
+// Send serializes data and sends it to the given client as a packet with the method value.
+func Send[T any](client *Client, method ApiMethod[T], data T) error {
+	payload, err := serializer.Marshal(data)
+	if err != nil {
+		return err
+	}
+	ps, err := client.PacketStream.SendPacket(novaproto.PacketHeader{
+		TargetID: client.Id,
+		Kind:     method.Value(),
+	})
+	if err != nil {
+		return err
+	}
+	if _, err := ps.Write(payload); err != nil {
+		return err
+	}
+	return ps.Close()
 }
 
 // List of mandatory methods, that required for protocol handshake.

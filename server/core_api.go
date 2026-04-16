@@ -7,11 +7,9 @@ import (
 
 	"github.com/nova-chat/novaproto"
 	"github.com/nova-chat/novaproto/dhellman"
-	"github.com/nova-chat/novaproto/serializer"
 )
 
-func (srv *Server) dhSv(ctx context.Context, client *User, header novaproto.PacketHeader, clientHello dto.DHPublic) error {
-
+func (srv *Server) dhSv(ctx context.Context, client *Client, header novaproto.PacketHeader, clientHello dto.DHPublic) error {
 	serverPublic, err := dhellman.GenerateKeyPair()
 	if err != nil {
 		return err
@@ -21,15 +19,7 @@ func (srv *Server) dhSv(ctx context.Context, client *User, header novaproto.Pack
 		return err
 	}
 
-	serverMsg, err := serializer.Marshal(dhellman.NewHelloMessage(serverPublic))
-	if err != nil {
-		return err
-	}
-	packetStream, err := client.PacketStream.SendPacket(novaproto.PacketHeader{
-		Kind: ServerDHPublic.Value(),
-	})
-	_, err = packetStream.Write(serverMsg)
-	if err != nil {
+	if err := Send(client, ServerDHPublic, dto.DHPublic{PublicKey: serverPublic.PublicKey()}); err != nil {
 		return err
 	}
 
@@ -42,6 +32,5 @@ func (srv *Server) dhSv(ctx context.Context, client *User, header novaproto.Pack
 	client.EncryptionKey = key
 	fmt.Println(client.EncryptionKey)
 
-	return packetStream.Close()
-
+	return nil
 }
