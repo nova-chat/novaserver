@@ -33,6 +33,7 @@ func NewServer(addr string) (*Server, error) {
 	}
 
 	ClientDHPublic.ServerRegister(srv, srv.dhSv)
+	ClientEncPing.ServerRegister(srv, srv.encPing)
 
 	return srv, nil
 }
@@ -76,16 +77,15 @@ func (srv *Server) Run(ctx context.Context) {
 }
 
 func (srv *Server) handleConnection(ctx context.Context, client net.Conn) {
+	defer client.Close()
 	user := &Client{
-		Id:            uuid.New(),
-		EncryptionKey: nil,
+		Id: uuid.New(),
 	}
 	srv.users.SetUser(user)
 	defer srv.users.DelUser(user.Id)
 
 	user.WireStream = novaproto.NewNovaWireStreamCipher(novaproto.NewNovaWireStream(client))
 	user.PacketStream = novaproto.NewRoutedPacketStream(novaproto.NewPacketStream(user.WireStream))
-
 	for {
 		select {
 		case <-ctx.Done():

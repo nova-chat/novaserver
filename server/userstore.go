@@ -8,10 +8,9 @@ import (
 )
 
 type Client struct {
-	Id            uuid.UUID
-	EncryptionKey []byte
+	Id uuid.UUID
 
-	WireStream   novaproto.Wire
+	WireStream   *novaproto.NovaWireStreamCipher
 	PacketStream *novaproto.RoutedPacketStream
 }
 

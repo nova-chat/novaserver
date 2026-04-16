@@ -2,7 +2,6 @@ package server
 
 import (
 	"context"
-	"fmt"
 	"novaserver/server/dto"
 
 	"github.com/nova-chat/novaproto"
@@ -29,8 +28,14 @@ func (srv *Server) dhSv(ctx context.Context, client *Client, header novaproto.Pa
 	if err != nil {
 		return err
 	}
-	client.EncryptionKey = key
-	fmt.Println(client.EncryptionKey)
+
+	client.WireStream.SetKey(key)
 
 	return nil
+}
+
+func (srv *Server) encPing(ctx context.Context, client *Client, header novaproto.PacketHeader, clientHello dto.EncHello) error {
+	return Send(client, ServerEncPong, dto.EncHello{
+		Text: clientHello.Text,
+	})
 }
